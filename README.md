@@ -37,7 +37,7 @@ none mocked. Then `/watch/held-back` for what it decided *not* to show you, and
 
 If you read two sections, read [what counts as
 meaningful](#what-counts-as-meaningful), which I measured after claiming it, and
-[what review found](#what-review-found), which is what I got wrong.
+[what review found](#what-review-found).
 
 ---
 
