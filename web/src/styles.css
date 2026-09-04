@@ -1,0 +1,893 @@
+/*
+ * Since — visual system.
+ *
+ * One idea governs the palette: colour has a noise budget.
+ *
+ * A conventional watchlist paints every row green or red. Across forty rows
+ * that means colour carries no information at all — the eye has nothing to
+ * land on, so it lands on nothing. Here, saturation is spent only on the two
+ * or three cards the system decided are worth a person's attention. The full
+ * list at /watch/all is deliberately monochrome. It is the same argument the
+ * ranking engine makes, expressed in pigment.
+ *
+ * The third semantic colour is the one most financial UIs lack. Up is green
+ * and down is red because that convention is older than the web and breaking
+ * it costs real money. But a corporate action, a stale feed or an unexplained
+ * structural move is neither good nor bad news — it is "we cannot tell you
+ * yet", and amber is the honest colour for that.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Ground: warm business newsprint, not the usual cream. */
+  --paper: #f7f2ee;
+  --paper-raised: #fffcfa;
+  --paper-sunken: #efe8e2;
+  --rule: #e3d9d1;
+  --rule-strong: #cfc2b8;
+
+  --ink: #16120f;
+  --ink-soft: #4b433d;
+  /*
+   * Both of these carry 10-14px text across most of the interface, so they are
+   * held to the small-text contrast bar rather than the large-text one. The
+   * previous values measured 3.76:1 and 2.36:1 on this ground, which is a
+   * legibility problem before it is a compliance one — and a financial product
+   * that renders its own hedging in grey is making a choice about who reads it.
+   */
+  --ink-mute: #6b625b;
+  --ink-faint: #857a72;
+
+  /* Signals. Reserved for surfaced cards only. */
+  --up: #1a7f57;
+  --up-wash: #1a7f5714;
+  --down: #bc3a28;
+  --down-wash: #bc3a2814;
+  --attn: #a06d16;
+  --attn-wash: #a06d1614;
+
+  --focus: #2f6fd0;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  --measure: 66rem;
+  --radius: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #131110;
+    --paper-raised: #1c1917;
+    --paper-sunken: #0d0b0a;
+    --rule: #2b2622;
+    --rule-strong: #423b35;
+
+    --ink: #f2ece7;
+    --ink-soft: #c4bab2;
+    --ink-mute: #a2968d;
+    --ink-faint: #857a72;
+
+    --up: #43c48c;
+    --up-wash: #43c48c1a;
+    --down: #ee7259;
+    --down-wash: #ee72591a;
+    --attn: #dda748;
+    --attn-wash: #dda7481a;
+
+    --focus: #6ea3f0;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #131110;
+  --paper-raised: #1c1917;
+  --paper-sunken: #0d0b0a;
+  --rule: #2b2622;
+  --rule-strong: #423b35;
+  --ink: #f2ece7;
+  --ink-soft: #c4bab2;
+  --ink-mute: #a2968d;
+  --ink-faint: #857a72;
+  --up: #43c48c;
+  --up-wash: #43c48c1a;
+  --down: #ee7259;
+  --down-wash: #ee72591a;
+  --attn: #dda748;
+  --attn-wash: #dda7481a;
+  --focus: #6ea3f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  /* rem, not px: an absolute size here silently overrides the reader's own
+     browser font-size preference for everything that inherits it. */
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1; /* tabular figures: columns must align */
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────── chrome ─── */
+
+.shell {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 6rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 0 0.875rem;
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 20;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 50, "WONK" 1, "opsz" 24;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.wordmark span {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+}
+
+.topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.index-chip {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.index-chip b {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────── digest header ─── */
+
+.digest-head {
+  padding: 2.75rem 0 1.25rem;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 50, "WONK" 1, "opsz" 120;
+  font-size: clamp(1.95rem, 5.2vw, 3.1rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+.subhead {
+  color: var(--ink-soft);
+  max-width: 62ch;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+/* ───────────────────────────────────────────── the absence ruler ────── */
+/*
+ * The signature element. One time axis for the whole page: the header draws
+ * it, and every card's path is plotted against exactly the same scale. That
+ * makes vertical alignment meaningful — two moves at the same x happened at
+ * the same moment, which is usually the market rather than the company.
+ */
+
+.ruler {
+  margin: 1.75rem 0 0;
+  position: relative;
+}
+
+.ruler svg {
+  display: block;
+  width: 100%;
+  height: 46px;
+  overflow: visible;
+}
+
+.ruler-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink-mute);
+  margin-top: 0.375rem;
+  letter-spacing: 0.02em;
+}
+
+.ruler-labels em {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────── cards ─── */
+
+.cards {
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 1fr minmax(9rem, 15rem);
+  gap: 1.25rem 2rem;
+  align-items: start;
+  padding: 1.5rem 0 1.5rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid var(--tone, var(--rule-strong));
+  position: relative;
+}
+
+.card[data-dir="UP"] {
+  --tone: var(--up);
+}
+.card[data-dir="DOWN"] {
+  --tone: var(--down);
+}
+.card[data-dir="NEUTRAL"] {
+  --tone: var(--attn);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.company {
+  color: var(--ink-mute);
+  font-size: 0.8125rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delta {
+  font-family: var(--font-mono);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--tone);
+}
+
+.kindtag {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--tone);
+  background: var(--tone-wash, var(--attn-wash));
+  padding: 0.1875rem 0.4375rem;
+  border-radius: var(--radius);
+}
+
+.card[data-dir="UP"] .kindtag {
+  --tone-wash: var(--up-wash);
+}
+.card[data-dir="DOWN"] .kindtag {
+  --tone-wash: var(--down-wash);
+}
+
+.because {
+  margin: 0.625rem 0 0;
+  color: var(--ink-soft);
+  max-width: 58ch;
+  font-size: 0.9375rem;
+}
+
+.price-line {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--ink-mute);
+  margin-top: 0.5rem;
+}
+
+.price-line b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.card-chart {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.card-chart--empty {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.card-chart svg {
+  display: block;
+  width: 100%;
+  height: 62px;
+  overflow: visible;
+}
+
+/* ───────────────────────────────────────────────────── audit view ───── */
+
+.why {
+  grid-column: 1 / -1;
+  margin-top: 0.875rem;
+}
+
+.why summary {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0;
+}
+
+.why summary::-webkit-details-marker {
+  display: none;
+}
+
+.why summary::before {
+  content: "▸";
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+
+.why[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.why summary:hover {
+  color: var(--ink);
+}
+
+.evidence {
+  margin: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--paper-sunken);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+}
+
+.evidence div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px dotted var(--rule);
+  padding-bottom: 0.25rem;
+}
+
+.evidence dt {
+  color: var(--ink-mute);
+}
+
+.evidence dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ──────────────────────────────────────────── suppression ledger ────── */
+/*
+ * Everything the system chose not to show, and why. A watchlist that hides
+ * its own decisions cannot be trusted with money.
+ */
+
+.ledger {
+  margin-top: 2.5rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.ledger > summary {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ledger > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ledger-count {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.ledger-why {
+  color: var(--ink-mute);
+  font-size: 0.875rem;
+}
+
+.ledger-body {
+  border-top: 1px solid var(--rule);
+  padding: 0.5rem 0;
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: 7.5rem 11rem 1fr;
+  gap: 1rem;
+  padding: 0.4375rem 1.25rem;
+  font-size: 0.8125rem;
+  align-items: baseline;
+}
+
+.ledger-row code {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.ledger-reason {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-mute);
+}
+
+.ledger-row p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* ──────────────────────────────────────────────────── quiet table ───── */
+/*
+ * Deliberately colourless. These rows are the ones the system decided are
+ * not worth attention; painting them would undo that decision.
+ */
+
+.quiet {
+  margin-top: 2.5rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--rule-strong);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/*
+ * The horizontal scroll container is unconditional.
+ *
+ * It used to live only inside the narrow-width media query, so between about
+ * 700px and 1100px there was no scroller at all while every cell was
+ * `white-space: nowrap` — the table ran past the edge of its column and the
+ * whole document scrolled sideways. Nine hundred pixels is the commonest
+ * laptop viewport there is, so the defect was most visible exactly where it
+ * mattered most.
+ */
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+table.rows {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+table.rows th {
+  text-align: right;
+  font-weight: 500;
+  color: var(--ink-faint);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.75rem 0.5rem 0.5rem;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+table.rows th:first-child,
+table.rows td:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+table.rows td {
+  text-align: right;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+table.rows td:first-child {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+table.rows tr:hover td {
+  background: var(--paper-sunken);
+}
+
+.badge {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border: 1px solid var(--rule-strong);
+  padding: 0.0625rem 0.3125rem;
+  border-radius: var(--radius);
+}
+
+.badge[data-q="CLOSED"],
+.badge[data-q="ILLIQUID"] {
+  color: var(--ink-mute);
+}
+
+.badge[data-q="STALE"],
+.badge[data-q="SUSPECT"],
+.badge[data-q="UNAVAILABLE"] {
+  color: var(--attn);
+  border-color: var(--attn);
+}
+
+/* ────────────────────────────────────────── adding and removing ─────── */
+/*
+ * Small on purpose. A watchlist is edited rarely and read constantly, so the
+ * editing affordance must not compete with the digest for attention.
+ */
+
+.quiet-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.quiet-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  max-width: 42ch;
+}
+
+.quiet-empty {
+  margin: 1.25rem 0 0;
+  color: var(--ink-mute);
+  font-size: 0.875rem;
+}
+
+.addsym {
+  position: relative;
+  min-width: 15rem;
+}
+
+.addsym-field input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  width: 100%;
+  padding: 0.4375rem 0.625rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.addsym-field input::placeholder {
+  color: var(--ink-faint);
+}
+
+.addsym-field input:focus {
+  border-color: var(--ink-soft);
+  outline: none;
+}
+
+.addsym-results {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 0.375rem);
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.14);
+  max-height: 17rem;
+  overflow-y: auto;
+}
+
+.addsym-results button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+}
+
+.addsym-results button[data-active="true"] {
+  background: var(--paper-sunken);
+}
+
+.addsym-results button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.addsym-results code {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.addsym-results span {
+  color: var(--ink-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addsym-results em {
+  margin-left: auto;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  flex: 0 0 auto;
+}
+
+.addsym-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--attn);
+}
+
+.rowaction-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Visible on hover and on keyboard focus, so it is reachable without a mouse
+   but does not add a column of noise to a table meant to be scanned. */
+.rowaction {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding: 0.25rem 0.375rem;
+  min-height: 1.75rem;
+  opacity: 0.35;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+
+table.rows tr:hover .rowaction,
+.rowaction:focus-visible {
+  opacity: 1;
+}
+
+/* On touch there is no hover, so a control that only appears on hover does not
+   appear. Faint-but-present beats invisible. */
+@media (hover: none) {
+  .rowaction {
+    opacity: 1;
+  }
+}
+
+.rowaction:hover {
+  color: var(--down);
+}
+
+/* ──────────────────────────────────────────────────────── controls ──── */
+
+.knob {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.knob input[type="range"] {
+  width: 6.5rem;
+  accent-color: var(--ink-soft);
+}
+
+.linkish {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 1px;
+}
+
+.linkish:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* The lab drawer moved to its own route; its styles live in shell.css. */
+
+/* ────────────────────────────────────────────────────────── motion ──── */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.card,
+.ledger,
+.quiet {
+  animation: rise 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+
+.path-draw {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: draw 0.6s cubic-bezier(0.3, 0.8, 0.4, 1) forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .path-draw {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ────────────────────────────────────────────────────────── mobile ──── */
+
+@media (max-width: 44rem) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+  /* Three labels under a narrow ruler wrap into columns and stop reading as a
+     timeline. The ends are what matter; the session count is on the axis. */
+  .ruler-labels > :nth-child(2) {
+    display: none;
+  }
+  .ruler-labels {
+    font-size: 0.625rem;
+  }
+  .card-chart {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .ledger-row {
+    grid-template-columns: 1fr;
+    gap: 0.125rem;
+    padding-bottom: 0.75rem;
+  }
+  .lab {
+    width: 100vw;
+    max-height: 65vh;
+  }
+}

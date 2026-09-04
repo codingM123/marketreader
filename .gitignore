@@ -1,0 +1,22 @@
+node_modules/
+dist/
+server/public/
+
+# Local runtime state. The recorded market data below is NOT ignored: it is
+# what makes a fresh clone work offline, which is the point of replay mode.
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Raw per-symbol 1m bar dumps from the recorder. Superseded by data/history/
+# and data/ticks.jsonl; nothing reads them.
+data/bars/
+
+# Python bytecode from the recorder tools
+__pycache__/
+*.pyc
+
+# Scratch space for review probes. Never part of the product.
+server/probe/
+server/.verify/

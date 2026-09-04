@@ -1,0 +1,23 @@
+{
+  "name": "marketreader",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A watchlist that answers: what meaningfully changed since you last looked?",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm -w server run dev\" \"npm -w web run dev\"",
+    "build": "npm -w server run build && npm -w web run build",
+    "start": "npm -w server run start",
+    "test": "npm -w server run test",
+    "serve": "npm run build && npm -w server run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.9 <23"
+  }
+}
